@@ -168,7 +168,14 @@ export default function OrderManagement() {
                     
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900 max-w-xs">
-                        {order.items || 'No items listed'}
+                        {Array.isArray(order.items) && order.items.length > 0 
+                          ? order.items.map((item, index) => (
+                              <div key={item.id || index} className="mb-1">
+                                {item.menu_item_name || item.name} x{item.quantity}
+                              </div>
+                            ))
+                          : 'No items listed'
+                        }
                       </div>
                     </td>
                     
@@ -199,7 +206,12 @@ export default function OrderManagement() {
                     
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => alert(`Order details for #${order.id}\n\nCustomer: ${order.customer_name}\nTable: ${order.table_number}\nItems: ${order.items}\nTotal: $${order.total_amount}\nNotes: ${order.notes || 'None'}`)}
+                        onClick={() => {
+                          const itemsList = Array.isArray(order.items) && order.items.length > 0
+                            ? order.items.map(item => `${item.menu_item_name || item.name} x${item.quantity}`).join('\n')
+                            : 'No items listed';
+                          alert(`Order details for #${order.id}\n\nCustomer: ${order.customer_name}\nTable: ${order.table_number}\nItems:\n${itemsList}\nTotal: $${order.total_amount}\nNotes: ${order.notes || 'None'}`);
+                        }}
                         className="text-blue-600 hover:text-blue-900"
                       >
                         View Details
