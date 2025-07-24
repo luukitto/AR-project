@@ -68,7 +68,7 @@ export default function OrderManagement() {
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
           >
             <option value="">All Statuses</option>
             {statusOptions.map(option => (
@@ -82,7 +82,7 @@ export default function OrderManagement() {
             type="date"
             value={filters.date}
             onChange={(e) => handleFilterChange('date', e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
           />
         </div>
       </div>

@@ -220,7 +220,7 @@ export default function MenuManagement() {
                   type="text"
                   value={formData.id}
                   onChange={(e) => setFormData({...formData, id: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   required
                   disabled={!!editingItem}
                 />
@@ -234,7 +234,7 @@ export default function MenuManagement() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   required
                 />
               </div>
@@ -246,7 +246,7 @@ export default function MenuManagement() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   rows="3"
                 />
               </div>
@@ -261,7 +261,7 @@ export default function MenuManagement() {
                     step="0.01"
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                     required
                   />
                 </div>
@@ -273,7 +273,7 @@ export default function MenuManagement() {
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({...formData, categoryId: parseInt(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   >
                     {categories.map(category => (
                       <option key={category.id} value={category.id}>
@@ -292,7 +292,7 @@ export default function MenuManagement() {
                   type="url"
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                 />
               </div>
               

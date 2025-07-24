@@ -80,10 +80,44 @@ export default function TableManagement() {
   };
 
   const generateQRCode = (table) => {
-    // In a real implementation, this would generate an actual QR code
     const qrUrl = `${window.location.origin}/table/${table.qr_code}`;
     navigator.clipboard.writeText(qrUrl);
-    alert('QR code URL copied to clipboard!');
+    alert(`Table ${table.table_number} QR URL copied to clipboard!\n\nCustomers can scan this QR code or visit:\n${qrUrl}`);
+  };
+
+  const printQRCode = (table) => {
+    const qrUrl = `${window.location.origin}/table/${table.qr_code}`;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Table ${table.table_number} QR Code</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+            .qr-container { border: 2px solid #000; padding: 20px; margin: 20px auto; max-width: 300px; }
+            .table-info { margin-bottom: 20px; }
+            .qr-placeholder { width: 200px; height: 200px; border: 2px dashed #ccc; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; }
+            .url { font-family: monospace; font-size: 12px; word-break: break-all; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <div class="table-info">
+              <h2>Table ${table.table_number}</h2>
+              <p>Capacity: ${table.capacity} people</p>
+            </div>
+            <div class="qr-placeholder">
+              QR Code Here<br/>
+              (Use QR generator with URL below)
+            </div>
+            <div class="url">${qrUrl}</div>
+            <p style="font-size: 12px; margin-top: 20px;">Scan to join table and start ordering</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   if (loading.tables) {
@@ -162,18 +196,24 @@ export default function TableManagement() {
 
             {/* QR Code Section */}
             <div className="bg-gray-50 rounded-lg p-3 mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-700">QR Code</p>
-                  <p className="text-xs text-gray-500 font-mono">
-                    {table.qr_code}
-                  </p>
-                </div>
+              <div className="mb-2">
+                <p className="text-xs font-medium text-gray-700">QR Code URL</p>
+                <p className="text-xs text-gray-500 font-mono break-all">
+                  {window.location.origin}/table/{table.qr_code}
+                </p>
+              </div>
+              <div className="flex space-x-2">
                 <button
                   onClick={() => generateQRCode(table)}
-                  className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                  className="flex-1 text-blue-600 hover:text-blue-800 text-xs font-medium py-1 px-2 bg-blue-50 rounded"
                 >
                   Copy URL
+                </button>
+                <button
+                  onClick={() => printQRCode(table)}
+                  className="flex-1 text-green-600 hover:text-green-800 text-xs font-medium py-1 px-2 bg-green-50 rounded"
+                >
+                  Print QR
                 </button>
               </div>
             </div>
@@ -187,10 +227,10 @@ export default function TableManagement() {
                 Edit
               </button>
               <button
-                onClick={() => generateQRCode(table)}
+                onClick={() => printQRCode(table)}
                 className="flex-1 bg-green-50 text-green-600 hover:bg-green-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
               >
-                QR Code
+                Print QR
               </button>
               <button
                 onClick={() => handleDelete(table.id)}
@@ -236,7 +276,7 @@ export default function TableManagement() {
                   type="text"
                   value={formData.tableNumber}
                   onChange={(e) => setFormData({...formData, tableNumber: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   placeholder="e.g., T01, A1, Table 1"
                   required
                 />
@@ -252,7 +292,7 @@ export default function TableManagement() {
                   max="20"
                   value={formData.capacity}
                   onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   required
                 />
               </div>

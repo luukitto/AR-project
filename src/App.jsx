@@ -6,13 +6,15 @@ import Cart from './pages/Cart';
 import Confirmation from './pages/Confirmation';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import TableAccess from './pages/TableAccess';
 import Navbar from './components/Navbar';
 
 export default function App() {
   const location = useLocation();
   const showNavbar = location.pathname !== '/' && 
                      location.pathname !== '/confirmation' && 
-                     !location.pathname.startsWith('/admin');
+                     !location.pathname.startsWith('/admin') &&
+                     !location.pathname.startsWith('/table/');
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
@@ -26,6 +28,7 @@ export default function App() {
           <Route path="/ar/:id" element={<ARPreview />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/table/:qrCode" element={<TableAccess />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>

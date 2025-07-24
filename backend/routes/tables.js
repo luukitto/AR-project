@@ -183,6 +183,68 @@ router.post('/sessions/:sessionId/end', async (req, res) => {
   }
 });
 
+// Get table by QR code (for customer access)
+router.get('/qr/:qrCode', async (req, res) => {
+  try {
+    const { qrCode } = req.params;
+    
+    const table = await db.get(`
+      SELECT rt.*, r.name as restaurant_name
+      FROM restaurant_tables rt
+      JOIN restaurants r ON rt.restaurant_id = r.id
+      WHERE rt.qr_code = ? AND rt.is_active = 1
+    `, [qrCode]);
+    
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found or inactive' });
+    }
+    
+    res.json({
+      id: table.id,
+      table_number: table.table_number,
+      capacity: table.capacity,
+      restaurant_name: table.restaurant_name,
+      qr_code: table.qr_code
+    });
+    
+  } catch (error) {
+    console.error('QR code lookup error:', error);
+    res.status(500).json({ error: 'Failed to lookup table' });
+  }
+});
+
+// Get active session for a table
+router.get('/:tableId/active-session', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    
+    const session = await db.get(`
+      SELECT ts.*, rt.table_number
+      FROM table_sessions ts
+      JOIN restaurant_tables rt ON ts.table_id = rt.id
+      WHERE ts.table_id = ? AND ts.is_active = 1 AND ts.expires_at > datetime('now')
+      ORDER BY ts.created_at DESC
+      LIMIT 1
+    `, [tableId]);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'No active session found' });
+    }
+    
+    res.json({
+      sessionId: session.id,
+      tableNumber: session.table_number,
+      sessionName: session.session_name,
+      hostName: session.host_name,
+      createdAt: session.created_at
+    });
+    
+  } catch (error) {
+    console.error('Active session lookup error:', error);
+    res.status(500).json({ error: 'Failed to lookup active session' });
+  }
+});
+
 // Get all available tables
 router.get('/', async (req, res) => {
   try {

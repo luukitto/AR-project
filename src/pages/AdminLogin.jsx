@@ -60,7 +60,7 @@ export default function AdminLogin() {
               value={credentials.username}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-gray-900 bg-white"
               placeholder="Enter your username"
             />
           </div>
@@ -76,7 +76,7 @@ export default function AdminLogin() {
               value={credentials.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-gray-900 bg-white"
               placeholder="Enter your password"
             />
           </div>
