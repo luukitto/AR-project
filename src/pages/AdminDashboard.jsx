@@ -5,9 +5,11 @@ import DashboardStats from '../components/admin/DashboardStats';
 import MenuManagement from '../components/admin/MenuManagement';
 import TableManagement from '../components/admin/TableManagement';
 import OrderManagement from '../components/admin/OrderManagement';
+import KitchenDisplay from '../components/admin/KitchenDisplay';
 
 const tabs = [
   { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+  { id: 'kitchen', name: 'Kitchen', icon: '👨‍🍳' },
   { id: 'menu', name: 'Menu', icon: '🍽️' },
   { id: 'tables', name: 'Tables', icon: '🪑' },
   { id: 'orders', name: 'Orders', icon: '📋' },
@@ -44,6 +46,8 @@ export default function AdminDashboard() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardStats />;
+      case 'kitchen':
+        return <KitchenDisplay />;
       case 'menu':
         return <MenuManagement />;
       case 'tables':

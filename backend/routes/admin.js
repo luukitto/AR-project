@@ -273,33 +273,44 @@ router.get('/orders', async (req, res) => {
     const restaurantId = req.user.restaurantId;
     const { status, date, limit = 50 } = req.query;
 
-    let query = `
-      SELECT o.*, rt.table_number, ts.session_name,
-             GROUP_CONCAT(mi.name || ' x' || oi.quantity) as items
+    // First get the orders
+    let orderQuery = `
+      SELECT o.*, rt.table_number, ts.session_name
       FROM orders o
       JOIN table_sessions ts ON o.session_id = ts.id
       JOIN restaurant_tables rt ON ts.table_id = rt.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
       WHERE rt.restaurant_id = ?
     `;
     
     const params = [restaurantId];
 
     if (status) {
-      query += ' AND o.status = ?';
+      orderQuery += ' AND o.status = ?';
       params.push(status);
     }
 
     if (date) {
-      query += ' AND DATE(o.created_at) = ?';
+      orderQuery += ' AND DATE(o.created_at) = ?';
       params.push(date);
     }
 
-    query += ' GROUP BY o.id ORDER BY o.created_at DESC LIMIT ?';
+    orderQuery += ' ORDER BY o.created_at DESC LIMIT ?';
     params.push(parseInt(limit));
 
-    const orders = await db.all(query, params);
+    const orders = await db.all(orderQuery, params);
+    
+    // Then get the items for each order with their individual statuses
+    for (let order of orders) {
+      const items = await db.all(`
+        SELECT oi.*, mi.name as menu_item_name
+        FROM order_items oi
+        JOIN menu_items mi ON oi.menu_item_id = mi.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
+      
+      order.items = items;
+    }
+    
     res.json(orders);
 
   } catch (error) {
@@ -341,6 +352,80 @@ router.patch('/orders/:id/status', async (req, res) => {
   } catch (error) {
     console.error('Update order status error:', error);
     res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// Update individual order item status
+router.patch('/orders/:orderId/items/:itemId/status', async (req, res) => {
+  try {
+    const restaurantId = req.user.restaurantId;
+    const { orderId, itemId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    // Verify order item belongs to this restaurant
+    const item = await db.get(`
+      SELECT oi.id FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      JOIN table_sessions ts ON o.session_id = ts.id
+      JOIN restaurant_tables rt ON ts.table_id = rt.id
+      WHERE oi.id = ? AND o.id = ? AND rt.restaurant_id = ?
+    `, [itemId, orderId, restaurantId]);
+
+    if (!item) {
+      return res.status(404).json({ error: 'Order item not found' });
+    }
+
+    // Update the item status
+    await db.run(`
+      UPDATE order_items 
+      SET item_status = ? 
+      WHERE id = ?
+    `, [status, itemId]);
+
+    // Calculate overall order status based on item statuses
+    const itemStatuses = await db.all(`
+      SELECT item_status, COUNT(*) as count
+      FROM order_items 
+      WHERE order_id = ?
+      GROUP BY item_status
+    `, [orderId]);
+
+    let overallStatus = 'pending';
+    const statusCounts = itemStatuses.reduce((acc, row) => {
+      acc[row.item_status] = row.count;
+      return acc;
+    }, {});
+
+    // Determine overall order status based on item statuses
+    if (statusCounts.delivered && Object.keys(statusCounts).length === 1) {
+      overallStatus = 'delivered';
+    } else if (statusCounts.ready || statusCounts.preparing) {
+      overallStatus = statusCounts.ready ? 'ready' : 'preparing';
+    } else if (statusCounts.confirmed) {
+      overallStatus = 'confirmed';
+    }
+
+    // Update overall order status
+    await db.run(`
+      UPDATE orders 
+      SET status = ? 
+      WHERE id = ?
+    `, [overallStatus, orderId]);
+
+    res.json({ 
+      message: 'Item status updated successfully',
+      itemStatus: status,
+      orderStatus: overallStatus
+    });
+
+  } catch (error) {
+    console.error('Update item status error:', error);
+    res.status(500).json({ error: 'Failed to update item status' });
   }
 });
 

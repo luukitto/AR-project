@@ -7,6 +7,7 @@ import Confirmation from './pages/Confirmation';
 import OrderHistory from './pages/OrderHistory';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import KitchenPage from './pages/KitchenPage';
 import TableAccess from './pages/TableAccess';
 import Navbar from './components/Navbar';
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/table/:qrCode" element={<TableAccess />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/kitchen" element={<KitchenPage />} />
         </Routes>
       </div>
     </div>
