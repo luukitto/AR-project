@@ -29,15 +29,15 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="w-full max-w-md mx-auto flex items-center justify-between px-4 py-3 bg-card shadow-soft rounded-b-xl z-20">
-        <Link to="/menu" className="font-bold text-primary text-lg tracking-wide">🍽️ Georgian Food</Link>
+      <nav className="w-full max-w-md mx-auto flex items-center justify-between px-4 py-4 bg-card shadow-soft rounded-b-xl z-20">
+        <Link to="/menu" className="font-bold text-primary text-lg tracking-wide py-2 px-1 min-h-touch flex items-center">🍽️ Georgian Food</Link>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           {/* Table Session Indicator */}
           {currentSession && (
             <button
               onClick={() => setShowSessionManager(true)}
-              className="relative p-2 rounded-full bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all duration-200"
+              className="relative p-3 rounded-full bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all duration-200 min-h-touch min-w-touch flex items-center justify-center"
               title={`Table ${currentSession.tableNumber} - ${customerName}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +53,7 @@ export default function Navbar() {
           {/* Notification Bell */}
           <button
             onClick={() => setShowNotificationSettings(true)}
-            className={`relative p-2 rounded-full transition-all duration-200 ${
+            className={`relative p-3 rounded-full transition-all duration-200 min-h-touch min-w-touch flex items-center justify-center ${
               notificationStatus.enabled 
                 ? 'text-green-600 bg-green-50 hover:bg-green-100' 
                 : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
@@ -71,7 +71,7 @@ export default function Navbar() {
           </button>
 
           {/* Cart */}
-          <Link to="/cart" className="relative p-2">
+          <Link to="/cart" className="relative p-3 min-h-touch min-w-touch flex items-center justify-center rounded-full hover:bg-gray-50 transition-all duration-200">
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6" />
             </svg>

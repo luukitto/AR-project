@@ -219,20 +219,20 @@ export default function TableAccess() {
                 id="customerName"
                 type="text"
                 value={customerName}
-                onChange={(e) => {
-                  setCustomerName(e.target.value);
-                  setError(''); // Clear error on input
-                }}
+                onChange={(e) => setCustomerName(e.target.value)}
                 onFocus={() => setNameInputFocused(true)}
                 onBlur={() => setNameInputFocused(false)}
                 placeholder="Enter your name"
-                className={`w-full bg-white/5 border-2 rounded-xl px-4 py-4 text-white placeholder-gray-400 transition-all duration-200 focus:outline-none ${
-                  nameInputFocused || customerName 
-                    ? 'border-amber-500 bg-white/10' 
-                    : 'border-white/20 hover:border-white/30'
-                } ${error ? 'border-red-400' : ''}`}
-                maxLength={30}
-                autoComplete="given-name"
+                className={`w-full px-4 py-4 bg-white/10 border-2 rounded-xl text-white placeholder-gray-400 text-lg transition-all duration-200 min-h-touch ${
+                  nameInputFocused || customerName.trim() 
+                    ? 'border-amber-500 bg-white/20' 
+                    : 'border-white/30'
+                }`}
+                maxLength={50}
+                autoComplete="name"
+                autoFocus
+                inputMode="text"
+                enterKeyHint="done"
               />
               {customerName && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">

@@ -1,4 +1,5 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Welcome from './pages/Welcome';
 import Menu from './pages/Menu';
 import ARPreview from './pages/ARPreview';
@@ -10,6 +11,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import KitchenPage from './pages/KitchenPage';
 import TableAccess from './pages/TableAccess';
 import Navbar from './components/Navbar';
+import MobileUtils from './utils/mobileUtils';
+import './styles/mobile.css';
 
 export default function App() {
   const location = useLocation();
@@ -20,8 +23,13 @@ export default function App() {
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
+  // Initialize mobile utilities
+  useEffect(() => {
+    MobileUtils.init();
+  }, []);
+
   return (
-    <div className={`min-h-screen ${isAdminRoute ? 'bg-gray-50' : 'bg-dark'} flex flex-col ${isAdminRoute ? '' : 'items-center'}`}>
+    <div className={`min-h-screen ${isAdminRoute ? 'bg-gray-50' : 'bg-dark'} flex flex-col ${isAdminRoute ? '' : 'items-center'} pt-safe-top pb-safe-bottom pl-safe-left pr-safe-right`}>
       {showNavbar && <Navbar />}
       <div className={`${isAdminRoute ? 'w-full' : 'w-full max-w-md'} flex-1 flex flex-col`}>
         <Routes>

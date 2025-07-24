@@ -19,6 +19,19 @@ module.exports = {
       },
       boxShadow: {
         soft: '0 4px 32px rgba(0,0,0,0.12)'
+      },
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+        'touch': '44px' // Minimum touch target size
+      },
+      minHeight: {
+        'touch': '44px'
+      },
+      minWidth: {
+        'touch': '44px'
       }
     }
   },
