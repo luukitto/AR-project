@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import notificationService from './notificationService';
 
 class SocketService {
   constructor() {
@@ -23,6 +24,9 @@ class SocketService {
       console.log('Disconnected from server');
       this.isConnected = false;
     });
+
+    // Set up automatic notification listeners
+    this.setupNotificationListeners();
 
     return this.socket;
   }
@@ -117,6 +121,151 @@ class SocketService {
   onNewCustomer(callback) {
     if (!this.socket) this.connect();
     this.socket.on('new-customer', callback);
+  }
+
+  // Set up automatic notification listeners
+  setupNotificationListeners() {
+    if (!this.socket) return;
+
+    // Order status changed notifications
+    this.socket.on('order-status-changed', (data) => {
+      console.log('Order status changed:', data);
+      
+      // Show notification based on status
+      if (notificationService.getStatus().enabled) {
+        notificationService.showOrderStatusNotification({
+          id: data.orderId,
+          status: data.status,
+          ...data
+        });
+      }
+    });
+
+    // New order placed notifications
+    this.socket.on('order-placed', (data) => {
+      console.log('Order placed:', data);
+      
+      if (notificationService.getStatus().enabled) {
+        notificationService.showOrderPlacedNotification({
+          id: data.order.id,
+          items: data.order.items,
+          ...data.order
+        });
+      }
+    });
+
+    // Customer joined table notifications
+    this.socket.on('new-customer', (data) => {
+      console.log('New customer joined:', data);
+      
+      if (notificationService.getStatus().enabled) {
+        notificationService.showCustomerJoinedNotification({
+          name: data.customerName,
+          ...data
+        });
+      }
+    });
+
+    // Cart shared notifications
+    this.socket.on('cart-shared', (data) => {
+      console.log('Cart shared:', data);
+      
+      if (notificationService.getStatus().enabled) {
+        notificationService.showCartSharedNotification({
+          customerName: data.customerName,
+          items: data.cartItems,
+          ...data
+        });
+      }
+    });
+  }
+
+  // Enhanced event listeners with notification integration
+  onOrderStatusChanged(callback) {
+    if (!this.socket) this.connect();
+    this.socket.on('order-status-changed', (data) => {
+      // Call the provided callback
+      if (callback) callback(data);
+      
+      // Also handle notifications automatically
+      if (notificationService.getStatus().enabled) {
+        notificationService.showOrderStatusNotification({
+          id: data.orderId,
+          status: data.status,
+          ...data
+        });
+      }
+    });
+  }
+
+  onOrderPlaced(callback) {
+    if (!this.socket) this.connect();
+    this.socket.on('order-placed', (data) => {
+      // Call the provided callback
+      if (callback) callback(data);
+      
+      // Also handle notifications automatically
+      if (notificationService.getStatus().enabled) {
+        notificationService.showOrderPlacedNotification({
+          id: data.order.id,
+          items: data.order.items,
+          ...data.order
+        });
+      }
+    });
+  }
+
+  onNewCustomer(callback) {
+    if (!this.socket) this.connect();
+    this.socket.on('new-customer', (data) => {
+      // Call the provided callback
+      if (callback) callback(data);
+      
+      // Also handle notifications automatically
+      if (notificationService.getStatus().enabled) {
+        notificationService.showCustomerJoinedNotification({
+          name: data.customerName,
+          ...data
+        });
+      }
+    });
+  }
+
+  onCartShared(callback) {
+    if (!this.socket) this.connect();
+    this.socket.on('cart-shared', (data) => {
+      // Call the provided callback
+      if (callback) callback(data);
+      
+      // Also handle notifications automatically
+      if (notificationService.getStatus().enabled) {
+        notificationService.showCartSharedNotification({
+          customerName: data.customerName,
+          items: data.cartItems,
+          ...data
+        });
+      }
+    });
+  }
+
+  // Notification management methods
+  async enableNotifications() {
+    try {
+      await notificationService.requestPermission();
+      return notificationService.getStatus();
+    } catch (error) {
+      console.error('Failed to enable notifications:', error);
+      throw error;
+    }
+  }
+
+  disableNotifications() {
+    notificationService.disable();
+    return notificationService.getStatus();
+  }
+
+  getNotificationStatus() {
+    return notificationService.getStatus();
   }
 
   // Remove event listeners

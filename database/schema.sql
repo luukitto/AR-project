@@ -88,6 +88,7 @@ CREATE TABLE table_sessions (
     is_active BOOLEAN DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME,
+    ended_at DATETIME,
     FOREIGN KEY (table_id) REFERENCES restaurant_tables(id)
 );
 

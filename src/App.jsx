@@ -4,6 +4,7 @@ import Menu from './pages/Menu';
 import ARPreview from './pages/ARPreview';
 import Cart from './pages/Cart';
 import Confirmation from './pages/Confirmation';
+import OrderHistory from './pages/OrderHistory';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import TableAccess from './pages/TableAccess';
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/menu" element={<Menu />} />
           <Route path="/ar/:id" element={<ARPreview />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/orders" element={<OrderHistory />} />
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/table/:qrCode" element={<TableAccess />} />
           <Route path="/admin/login" element={<AdminLogin />} />

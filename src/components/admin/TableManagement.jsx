@@ -16,7 +16,8 @@ export default function TableManagement() {
     fetchTables, 
     createTable, 
     updateTable, 
-    deleteTable 
+    deleteTable,
+    apiCall 
   } = useAdminStore();
 
   useEffect(() => {
@@ -77,6 +78,26 @@ export default function TableManagement() {
   const handleNewTable = () => {
     resetForm();
     setShowModal(true);
+  };
+
+  const handleEndSession = async (table) => {
+    if (!confirm(`Are you sure you want to end the active session for Table ${table.table_number}?\n\nThis will disconnect all customers from the table.`)) {
+      return;
+    }
+
+    try {
+      // Call API to end the active session for this table using authenticated apiCall
+      await apiCall(`/tables/${table.id}/end-session`, {
+        method: 'POST',
+      });
+
+      // Refresh tables to update the UI
+      await fetchTables();
+      alert(`Session ended for Table ${table.table_number}`);
+    } catch (error) {
+      console.error('Error ending session:', error);
+      alert('Failed to end session: ' + error.message);
+    }
   };
 
   const generateQRCode = (table) => {
@@ -180,9 +201,22 @@ export default function TableManagement() {
             <div className="mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Active Sessions:</span>
-                <span className="font-medium text-gray-900">
-                  {table.active_sessions_count || 0}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`font-medium ${
+                    (table.active_sessions_count || 0) > 0 ? 'text-green-600' : 'text-gray-900'
+                  }`}>
+                    {table.active_sessions_count || 0}
+                  </span>
+                  {(table.active_sessions_count || 0) > 0 && (
+                    <button
+                      onClick={() => handleEndSession(table)}
+                      className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                      title="End active session"
+                    >
+                      End Session
+                    </button>
+                  )}
+                </div>
               </div>
               {table.last_session_time && (
                 <div className="flex items-center justify-between text-sm mt-1">

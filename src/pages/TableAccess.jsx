@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useTableSharing from '../store/useTableSharing';
+import apiService from '../services/api';
 
 export default function TableAccess() {
   const { qrCode } = useParams();
@@ -29,26 +30,23 @@ export default function TableAccess() {
   const fetchTableInfo = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/tables/qr/${qrCode}`);
       
-      if (!response.ok) {
-        throw new Error('Invalid QR code or table not found');
-      }
-
-      const data = await response.json();
+      // Use API service instead of direct fetch
+      const data = await apiService.request(`/tables/qr/${qrCode}`);
       setTableInfo(data);
       
       // Check if there's an active session
-      const sessionResponse = await fetch(`http://localhost:3001/api/tables/${data.id}/active-session`);
-      if (sessionResponse.ok) {
+      try {
+        await apiService.request(`/tables/${data.id}/active-session`);
         setSessionType('existing');
-      } else {
+      } catch (sessionError) {
+        // No active session found
         setSessionType('new');
       }
       
       setStep('welcome');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Invalid QR code or table not found');
       setStep('error');
     } finally {
       setLoading(false);
@@ -83,8 +81,7 @@ export default function TableAccess() {
     try {
       if (sessionType === 'existing') {
         // Join existing session
-        const response = await fetch(`http://localhost:3001/api/tables/${tableInfo.id}/active-session`);
-        const sessionData = await response.json();
+        const sessionData = await apiService.request(`/tables/${tableInfo.id}/active-session`);
         await joinSession(sessionData.sessionId, customerName.trim());
       } else {
         // Create new session

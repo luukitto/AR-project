@@ -15,7 +15,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://192.168.1.215:5174"], // Vite dev server
+    origin: true, // Allow all origins for development
     methods: ["GET", "POST"]
   }
 });
@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "http://192.168.1.215:5174"],
+  origin: true, // Allow all origins for development
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true
 }));
@@ -154,8 +154,11 @@ process.on('SIGINT', async () => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Georgian AR Menu API server running on port ${PORT}`);
+  console.log(`📱 Server accessible from all network interfaces`);
+  console.log(`🌐 Local: http://localhost:${PORT}`);
+  console.log(`🌐 Network: http://192.168.1.215:${PORT}`);
   console.log(`📱 Socket.IO enabled for real-time table sharing`);
   console.log(`🍽️  Database: SQLite`);
 });

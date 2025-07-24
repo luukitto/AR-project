@@ -267,4 +267,52 @@ router.get('/', async (req, res) => {
   }
 });
 
+// End active session for a table
+router.post('/:tableId/end-session', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    
+    // Check if table exists
+    const table = await db.get('SELECT id, table_number FROM restaurant_tables WHERE id = ?', [tableId]);
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+    
+    // Find active session for this table
+    const activeSession = await db.get(`
+      SELECT id, host_name FROM table_sessions 
+      WHERE table_id = ? AND is_active = 1
+    `, [tableId]);
+    
+    if (!activeSession) {
+      return res.status(404).json({ error: 'No active session found for this table' });
+    }
+    
+    // End the session
+    await db.run(`
+      UPDATE table_sessions 
+      SET is_active = 0, ended_at = datetime('now') 
+      WHERE id = ?
+    `, [activeSession.id]);
+    
+    // Remove all customers from the session
+    await db.run(`
+      DELETE FROM session_customers 
+      WHERE session_id = ?
+    `, [activeSession.id]);
+    
+    console.log(`Session ${activeSession.id} ended for table ${table.table_number}`);
+    
+    res.json({
+      message: 'Session ended successfully',
+      sessionId: activeSession.id,
+      tableNumber: table.table_number
+    });
+    
+  } catch (error) {
+    console.error('Error ending session:', error);
+    res.status(500).json({ error: 'Failed to end session' });
+  }
+});
+
 module.exports = router;

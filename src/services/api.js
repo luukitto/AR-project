@@ -1,4 +1,21 @@
-const API_BASE_URL = 'http://192.168.1.215:3001/api';
+// Dynamic API base URL configuration
+const getApiBaseUrl = () => {
+  // If running on localhost (development), use localhost
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3001/api';
+  }
+  
+  // For mobile devices, try to use the same host as the frontend
+  const currentHost = window.location.hostname;
+  if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+    return `http://${currentHost}:3001/api`;
+  }
+  
+  // Fallback to the configured IP
+  return 'http://192.168.1.215:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -11,17 +28,46 @@ class ApiService {
       ...options,
     };
 
+    console.log('🌐 API Request:', {
+      url,
+      method: config.method || 'GET',
+      hostname: window.location.hostname,
+      apiBaseUrl: API_BASE_URL
+    });
+
     try {
       const response = await fetch(url, config);
       
+      console.log('📡 API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+        let errorMessage;
+        try {
+          const error = await response.json();
+          errorMessage = error.error || `HTTP error! status: ${response.status}`;
+        } catch (parseError) {
+          errorMessage = `HTTP error! status: ${response.status} - ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
       
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('❌ API request failed:', {
+        url,
+        error: error.message,
+        stack: error.stack
+      });
+      
+      // Provide more helpful error messages for common issues
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error: Cannot connect to server. Please check your internet connection.');
+      }
+      
       throw error;
     }
   }

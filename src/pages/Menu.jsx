@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import foods from '../store/foods';
-
+import useCart from '../store/useCart';
+import useTableSharing from '../store/useTableSharing';
 import { useState } from 'react';
 
 export default function Menu() {
   const navigate = useNavigate();
   const [category, setCategory] = useState('food');
+  const { addToCart, cart } = useCart();
+  const { currentSession, sessionOrders } = useTableSharing();
+  const [showAddedFeedback, setShowAddedFeedback] = useState(null);
 
   const categories = [
     { key: 'food', label: 'Foods' },
@@ -15,9 +19,30 @@ export default function Menu() {
 
   const filtered = foods.filter(f => f.category === category);
 
+  const handleAddToCart = (item) => {
+    addToCart(item);
+    setShowAddedFeedback(item.id);
+    setTimeout(() => setShowAddedFeedback(null), 2000);
+  };
+
+  const getItemQuantityInCart = (itemId) => {
+    const cartItem = cart.find(item => item.id === itemId);
+    return cartItem ? cartItem.qty : 0;
+  };
+
   return (
     <div className="py-6 px-3">
-      <h2 className="text-2xl font-bold mb-4 font-georgian">Menu</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold font-georgian">Menu</h2>
+        {currentSession && (
+          <button
+            onClick={() => navigate('/orders')}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+          >
+            Order History
+          </button>
+        )}
+      </div>
       <div className="flex gap-2 mb-6">
         {categories.map(cat => (
           <button
@@ -42,12 +67,25 @@ export default function Menu() {
               </div>
               <div className="font-bold text-primary text-lg">₾{food.price.toFixed(2)}</div>
             </div>
-            <button
-              className="mt-2 bg-accent text-white font-bold rounded-lg px-4 py-2 text-sm hover:bg-primary transition-colors"
-              onClick={() => navigate(`/ar/${food.id}`)}
-            >
-              View in AR
-            </button>
+            <div className="flex gap-2 mt-2">
+              <button
+                className="flex-1 bg-accent text-white font-bold rounded-lg px-4 py-2 text-sm hover:bg-primary transition-colors"
+                onClick={() => navigate(`/ar/${food.id}`)}
+              >
+                View in AR
+              </button>
+              <button
+                className={`flex-1 font-bold rounded-lg px-4 py-2 text-sm transition-colors ${
+                  showAddedFeedback === food.id 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-primary text-dark hover:bg-accent hover:text-white'
+                }`}
+                onClick={() => handleAddToCart(food)}
+              >
+                {showAddedFeedback === food.id ? '✓ Added!' : 
+                 getItemQuantityInCart(food.id) > 0 ? `Add More (${getItemQuantityInCart(food.id)})` : 'Add to Cart'}
+              </button>
+            </div>
           </div>
         ))}
       </div>
