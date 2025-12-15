@@ -1,10 +1,20 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const db = require('../database/connection');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const MIN_PASSWORD_LENGTH = 8;
+
+// Basic rate limiting to slow brute force login attempts
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 login attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -25,12 +35,16 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Login endpoint
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
     }
 
     // Get user from database
@@ -45,9 +59,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Verify password (in production, use proper bcrypt comparison)
-    // For now, using simple comparison - should be: await bcrypt.compare(password, user.password_hash)
-    const isValidPassword = password === 'admin123'; // Temporary for development
+    // Verify password using bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password_hash || '');
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
