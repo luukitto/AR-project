@@ -1,64 +1,51 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import foods from '../store/foods';
 import useCart from '../store/useCart';
 import useTableSharing from '../store/useTableSharing';
+import Api from '../services/api';
+import MobileUtils from '../utils/mobileUtils';
 
 // AR Placement Button Component
-function ARPlacementButton({ food }) {
-  const [isARSupported, setIsARSupported] = React.useState(false);
-  const [isPlacing, setIsPlacing] = React.useState(false);
-  const modelViewerRef = React.useRef(null);
+function ARPlacementButton({ food, modelSrc, iosSrc }) {
+  const [isARSupported, setIsARSupported] = useState(false);
+  const [isPlacing, setIsPlacing] = useState(false);
+  const modelViewerRef = useRef(null);
 
-  React.useEffect(() => {
-    // Check if AR is supported
+  useEffect(() => {
     const checkARSupport = async () => {
       if ('xr' in navigator) {
         try {
           const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
           setIsARSupported(isSupported);
         } catch (error) {
-          console.log('WebXR not supported:', error);
-          // Fallback to checking for iOS AR Quick Look
           setIsARSupported(/iPad|iPhone|iPod/.test(navigator.userAgent));
         }
       } else {
-        // Fallback for iOS Safari
         setIsARSupported(/iPad|iPhone|iPod/.test(navigator.userAgent));
       }
     };
-    
     checkARSupport();
   }, []);
 
   const handleARPlacement = async () => {
     setIsPlacing(true);
-    
     try {
       if (modelViewerRef.current) {
-        // For iOS devices, this will trigger AR Quick Look
-        // For Android devices with WebXR support, this will start AR session
         const modelViewer = modelViewerRef.current;
-        
         if (modelViewer.canActivateAR) {
           await modelViewer.activateAR();
         } else {
-          // Fallback: Create a temporary model-viewer for AR
           const tempViewer = document.createElement('model-viewer');
-          tempViewer.src = food.id === 'khachapuri' ? '/Popcorn.glb' : '/default-food-model.glb';
-          tempViewer.iosSrc = food.id === 'khachapuri' ? '/AR-Code-Object-Capture-app-1752752575.usdz' : '/default-food-model.usdz';
+          tempViewer.src = modelSrc;
+          tempViewer.iosSrc = iosSrc;
           tempViewer.ar = true;
           tempViewer.arModes = 'webxr scene-viewer quick-look';
           tempViewer.style.display = 'none';
-          
           document.body.appendChild(tempViewer);
-          
-          // Wait for model to load then activate AR
           tempViewer.addEventListener('load', async () => {
             try {
               await tempViewer.activateAR();
             } catch (error) {
-              console.error('AR activation failed:', error);
               alert('AR not available on this device. Please try on a compatible mobile device.');
             } finally {
               document.body.removeChild(tempViewer);
@@ -68,15 +55,16 @@ function ARPlacementButton({ food }) {
       }
     } catch (error) {
       console.error('AR placement error:', error);
-      alert('AR placement failed. Make sure you\'re using a compatible device and have camera permissions.');
+      alert("AR placement failed. Make sure you're on a compatible device with camera permission.");
     } finally {
       setIsPlacing(false);
     }
   };
 
   const handleFallbackPlacement = () => {
-    // Show instructions for manual AR placement
-    alert(`To place ${food.name} in AR:\n\n1. Point your camera at a flat surface\n2. Tap to place the 3D model\n3. Move around to see it from different angles\n\nNote: This requires a compatible AR device (iPhone 6s+ or Android with ARCore)`);
+    alert(
+      `To place ${food.name} in AR:\n\n1. Point your camera at a flat surface\n2. Tap to place the 3D model\n3. Move around to see it from different angles\n\nNote: Requires a compatible AR device (iPhone 6s+ or Android with ARCore).`
+    );
   };
 
   return (
@@ -92,23 +80,20 @@ function ARPlacementButton({ food }) {
             Starting AR...
           </>
         ) : (
-          <>
-            📱 {isARSupported ? 'Place on Table (AR)' : 'AR Instructions'}
-          </>
+          <>📱 {isARSupported ? 'Place on Table (AR)' : 'AR Instructions'}</>
         )}
       </button>
-      
+
       {isARSupported && (
         <p className="text-xs text-gray-400 text-center max-w-xs">
           Point your camera at a flat surface and tap to place {food.name} in your space
         </p>
       )}
-      
-      {/* Hidden model-viewer for AR functionality */}
+
       <model-viewer
         ref={modelViewerRef}
-        src={food.id === 'khachapuri' ? '/Popcorn.glb' : '/default-food-model.glb'}
-        ios-src={food.id === 'khachapuri' ? '/AR-Code-Object-Capture-app-1752752575.usdz' : '/default-food-model.usdz'}
+        src={modelSrc}
+        ios-src={iosSrc}
         ar
         ar-modes="webxr scene-viewer quick-look"
         ar-scale="auto"
@@ -120,7 +105,7 @@ function ARPlacementButton({ food }) {
   );
 }
 
-// Full Table Sharing Component
+// Table sharing section (kept largely as before)
 function GroupOrderSection({ food }) {
   const {
     currentSession,
@@ -137,40 +122,37 @@ function GroupOrderSection({ food }) {
     setCustomerName,
     shareCart,
     clearError,
-    restoreSession
+    restoreSession,
   } = useTableSharing();
 
   const { cart } = useCart();
-  const [showJoinForm, setShowJoinForm] = React.useState(false);
-  const [showCreateForm, setShowCreateForm] = React.useState(false);
-  const [joinCode, setJoinCode] = React.useState('');
-  const [hostName, setHostName] = React.useState('');
-  const [tableNumber, setTableNumber] = React.useState('T01');
-  const [sessionName, setSessionName] = React.useState('');
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [hostName, setHostName] = useState('');
+  const [tableNumber, setTableNumber] = useState('T01');
+  const [sessionName, setSessionName] = useState('');
 
-  // Restore session on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     restoreSession();
-  }, []);
+  }, [restoreSession]);
 
-  // Share cart when it changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentSession && customerName && cart.length > 0) {
       shareCart(cart);
     }
-  }, [cart, currentSession, customerName]);
+  }, [cart, currentSession, customerName, shareCart]);
 
   const handleCreateSession = async () => {
     if (!hostName.trim()) {
       alert('Please enter your name');
       return;
     }
-
     try {
       await createSession(tableNumber, hostName.trim(), sessionName.trim() || null);
       setShowCreateForm(false);
-    } catch (error) {
-      alert(`Failed to create session: ${error.message}`);
+    } catch (err) {
+      alert(`Failed to create session: ${err.message}`);
     }
   };
 
@@ -183,32 +165,27 @@ function GroupOrderSection({ food }) {
       alert('Please enter your name');
       return;
     }
-
     try {
       await joinSession(joinCode.trim(), customerName.trim());
       setShowJoinForm(false);
-    } catch (error) {
-      alert(`Failed to join session: ${error.message}`);
+    } catch (err) {
+      alert(`Failed to join session: ${err.message}`);
     }
   };
 
   const handleLeaveSession = () => {
-    if (confirm('Are you sure you want to leave this table session?')) {
-      leaveSession();
-    }
+    if (confirm('Leave this table session?')) leaveSession();
   };
 
   const handleEndSession = async () => {
-    if (confirm('Are you sure you want to end this session for everyone?')) {
-      try {
-        await endSession();
-      } catch (error) {
-        alert(`Failed to end session: ${error.message}`);
-      }
+    if (!confirm('End this session for everyone?')) return;
+    try {
+      await endSession();
+    } catch (err) {
+      alert(`Failed to end session: ${err.message}`);
     }
   };
 
-  // If in a session, show session info
   if (currentSession) {
     return (
       <div className="my-4 w-full max-w-sm mx-auto bg-card rounded-xl p-4 shadow-soft">
@@ -219,12 +196,9 @@ function GroupOrderSection({ food }) {
           <div className="text-xs text-gray-400">
             Session: {currentSession.sessionId?.slice(-6).toUpperCase()}
           </div>
-          {isHost && (
-            <div className="text-xs text-primary mt-1">👑 You are the host</div>
-          )}
+          {isHost && <div className="text-xs text-primary mt-1">👑 You are the host</div>}
         </div>
 
-        {/* Customers in session */}
         {customers.length > 0 && (
           <div className="mb-3">
             <div className="text-xs text-gray-400 mb-1">At this table ({customers.length}):</div>
@@ -247,7 +221,6 @@ function GroupOrderSection({ food }) {
           </div>
         )}
 
-        {/* Session orders summary */}
         {sessionOrders.length > 0 && (
           <div className="mb-3">
             <div className="text-xs text-gray-400 mb-1">Recent orders ({sessionOrders.length}):</div>
@@ -255,11 +228,17 @@ function GroupOrderSection({ food }) {
               {sessionOrders.slice(0, 3).map((order) => (
                 <div key={order.id} className="text-xs text-white mb-1">
                   <span className="font-bold">{order.customer_name}</span>: ₾{order.total_amount}
-                  <span className={`ml-2 px-1 rounded text-xs ${
-                    order.status === 'pending' ? 'bg-yellow-600' :
-                    order.status === 'confirmed' ? 'bg-blue-600' :
-                    order.status === 'ready' ? 'bg-green-600' : 'bg-gray-600'
-                  }`}>
+                  <span
+                    className={`ml-2 px-1 rounded text-xs ${
+                      order.status === 'pending'
+                        ? 'bg-yellow-600'
+                        : order.status === 'confirmed'
+                        ? 'bg-blue-600'
+                        : order.status === 'ready'
+                        ? 'bg-green-600'
+                        : 'bg-gray-600'
+                    }`}
+                  >
                     {order.status}
                   </span>
                 </div>
@@ -268,7 +247,6 @@ function GroupOrderSection({ food }) {
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="flex gap-2">
           <button
             onClick={handleLeaveSession}
@@ -289,14 +267,15 @@ function GroupOrderSection({ food }) {
         {error && (
           <div className="mt-2 text-xs text-red-400 text-center">
             {error}
-            <button onClick={clearError} className="ml-2 underline">Dismiss</button>
+            <button onClick={clearError} className="ml-2 underline">
+              Dismiss
+            </button>
           </div>
         )}
       </div>
     );
   }
 
-  // If not in a session, show join/create options
   return (
     <div className="my-4 w-full max-w-sm mx-auto">
       <div className="text-center mb-3">
@@ -321,7 +300,6 @@ function GroupOrderSection({ food }) {
         </div>
       )}
 
-      {/* Create Session Form */}
       {showCreateForm && (
         <div className="bg-card rounded-lg p-3 space-y-2">
           <div className="text-xs font-bold text-white mb-2">Host a New Table</div>
@@ -368,7 +346,6 @@ function GroupOrderSection({ food }) {
         </div>
       )}
 
-      {/* Join Session Form */}
       {showJoinForm && (
         <div className="bg-card rounded-lg p-3 space-y-2">
           <div className="text-xs font-bold text-white mb-2">Join a Table</div>
@@ -407,110 +384,224 @@ function GroupOrderSection({ food }) {
       {error && (
         <div className="mt-2 text-xs text-red-400 text-center">
           {error}
-          <button onClick={clearError} className="ml-2 underline">Dismiss</button>
+          <button onClick={clearError} className="ml-2 underline">
+            Dismiss
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-// MVP Feedback section
-function FeedbackSection({ foodId }) {
-  const [rating, setRating] = React.useState(0);
-  const [comment, setComment] = React.useState('');
-  const [submitted, setSubmitted] = React.useState(false);
-  function submit() {
-    // Store feedback in localStorage (MVP)
-    const feedbacks = JSON.parse(localStorage.getItem('feedbacks') || '{}');
-    feedbacks[foodId] = { rating, comment };
-    localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
-    setSubmitted(true);
-  }
-  if (submitted) return <div className="mt-4 text-green-400">Thank you for your feedback!</div>;
-  return (
-    <div className="mt-4 w-full flex flex-col items-center">
-      <div className="flex gap-1 mb-1">
-        {[1,2,3,4,5].map(n => (
-          <button key={n} onClick={() => setRating(n)} className={n <= rating ? 'text-yellow-400' : 'text-gray-500'}>★</button>
-        ))}
-      </div>
-      <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Add a comment..." className="w-48 px-2 py-1 rounded bg-muted text-white text-xs mb-1" />
-      <button onClick={submit} className="px-3 py-1 bg-primary text-dark rounded text-xs">Submit</button>
-    </div>
-  );
-}
-
 export default function ARPreview() {
-  const { id } = useParams();
-  const food = foods.find(f => f.id === id);
   const navigate = useNavigate();
-  const { addToCart } = useCart();
-  if (!food) return <div className="p-8 text-center">Food not found</div>;
-  return (
-    <div className="flex flex-col min-h-screen bg-dark">
-      <div className="flex items-center justify-between px-4 py-3 bg-card shadow-soft">
-        <button onClick={() => navigate(-1)} className="text-primary font-bold">← Back</button>
-        <span className="font-bold text-lg font-georgian">{food.name}</span>
-        <span></span>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="w-72 h-72 bg-muted rounded-2xl flex items-center justify-center shadow-soft relative">
-          {/* AR Model Preview */}
-          {food.id === 'khachapuri' ? (
-            <model-viewer
-              src="/Popcorn.glb"
-              ios-src="/AR-Code-Object-Capture-app-1752752575.usdz"
-              ar
-              ar-modes="webxr scene-viewer quick-look"
-              camera-controls
-              auto-rotate
-              alt="Khachapuri AR Preview"
-              style={{ width: '100%', height: '100%', background: 'transparent', borderRadius: '1rem' }}
-            >
-            </model-viewer>
-          ) : (
-            <img src={food.image} alt={food.name} className="w-48 h-48 object-contain drop-shadow-2xl" style={{filter:'brightness(1.1)'}} />
-          )}
-          <span className="absolute bottom-2 right-3 text-xs text-white bg-dark/60 px-2 py-1 rounded-md">AR Preview</span>
+  const { id } = useParams();
+  const { addToCart, cart } = useCart();
+  const [food, setFood] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAddedFeedback, setShowAddedFeedback] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const item = await Api.getMenuItem(id);
+        setFood(item);
+      } catch (err) {
+        setError(err.message || 'Failed to load item');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
+
+  const modelSrc = useMemo(() => {
+    if (!food) return '/default-food-model.glb';
+    return food.id === 'khachapuri' ? '/Popcorn.glb' : '/default-food-model.glb';
+  }, [food]);
+
+  const iosSrc = useMemo(() => {
+    if (!food) return '/default-food-model.usdz';
+    return food.id === 'khachapuri'
+      ? '/AR-Code-Object-Capture-app-1752752575.usdz'
+      : '/default-food-model.usdz';
+  }, [food]);
+
+  const handleAdd = () => {
+    if (!food) return;
+    MobileUtils.hapticFeedback('light');
+    addToCart({
+      id: food.id,
+      name: food.name,
+      desc: food.description,
+      price: Number(food.price),
+      image: food.image_url,
+      modifiers: food.modifiers || [],
+      is_spicy: food.is_spicy,
+      is_vegan: food.is_vegan,
+      allergens: food.allergens || [],
+    });
+  };
+
+  const qtyInCart = food ? cart.find((item) => item.id === food.id)?.qty || 0 : 0;
+
+  const handleAddToCart = () => {
+    handleAdd();
+    setShowAddedFeedback(true);
+    setTimeout(() => setShowAddedFeedback(false), 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-48 bg-gray-200 rounded-xl"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
         </div>
+      </div>
+    );
+  }
 
-        {/* 1. AR Table Placement */}
-        <ARPlacementButton food={food} />
+  if (error || !food) {
+    return (
+      <div className="p-4 text-center">
+        <h2 className="text-xl font-bold mb-2">Item not found</h2>
+        {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
+        <button
+          onClick={() => navigate('/menu')}
+          className="bg-primary text-dark px-4 py-2 rounded-lg font-bold"
+        >
+          Back to Menu
+        </button>
+      </div>
+    );
+  }
 
-        {/* 2. Group Ordering: Share/Join Table Code */}
-        <GroupOrderSection food={food} />
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+      <div className="p-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-gray-300 hover:text-white flex items-center gap-2 mb-4"
+        >
+          ← Back
+        </button>
 
-        {/* 3. Pairing Suggestions */}
-        {food.pairings && food.pairings.length > 0 && (
-          <div className="mt-4 w-full">
-            <div className="font-bold text-accent mb-2">Recommended Pairings:</div>
-            <div className="flex flex-wrap gap-2">
-              {food.pairings.map(pid => {
-                const pair = foods.find(f => f.id === pid);
-                return pair ? (
-                  <button
-                    key={pid}
-                    onClick={() => navigate(`/ar/${pid}`)}
-                    className="bg-muted text-white px-3 py-1 rounded-full shadow-soft hover:bg-primary transition-colors font-georgian"
-                  >
-                    {pair.name}
-                  </button>
-                ) : null;
-              })}
+        <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 shadow-2xl">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex-1">
+              <div className="bg-black/20 rounded-2xl overflow-hidden border border-white/5">
+                <img
+                  src={food.image_url}
+                  alt={food.name}
+                  className="w-full h-64 object-cover"
+                  loading="lazy"
+                />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <ARPlacementButton food={food} modelSrc={modelSrc} iosSrc={iosSrc} />
+                <div className="text-xs text-gray-400 text-center">
+                  Tip: find a flat surface, move your phone side to side, then tap to place.
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl font-bold font-georgian mb-1">{food.name}</h1>
+                  <p className="text-gray-300 text-sm max-w-xl">{food.description}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-primary text-3xl font-bold">₾{Number(food.price).toFixed(2)}</div>
+                  {qtyInCart > 0 && <div className="text-xs text-green-400 mt-1">In cart: {qtyInCart}</div>}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {food.is_spicy ? (
+                  <span className="px-3 py-1 text-xs rounded-full bg-red-100/20 text-red-200 border border-red-500/30">
+                    Spicy
+                  </span>
+                ) : null}
+                {food.is_vegan ? (
+                  <span className="px-3 py-1 text-xs rounded-full bg-green-100/20 text-green-200 border border-green-500/30">
+                    Vegan
+                  </span>
+                ) : null}
+                {food.allergens && food.allergens.length > 0 && !food.allergens.includes('none') && (
+                  <span className="px-3 py-1 text-xs rounded-full bg-amber-100/20 text-amber-200 border border-amber-500/30">
+                    Allergens: {food.allergens.join(', ')}
+                  </span>
+                )}
+              </div>
+
+              {food.modifiers && food.modifiers.length > 0 && (
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <div className="text-xs text-gray-300 mb-2">Extras</div>
+                  <div className="flex flex-wrap gap-2">
+                    {food.modifiers.map((m, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-3 py-1 rounded-full bg-white/10 text-white border border-white/10"
+                      >
+                        {m.name} (+₾{Number(m.price).toFixed(2)})
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-[11px] text-gray-400 mt-2">
+                    (Extras shown here; cart price doesn’t yet auto-add them in this build.)
+                  </div>
+                </div>
+              )}
+
+              {food.pairings && food.pairings.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold mb-2">Recommended pairings</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {food.pairings.map((pairing) => (
+                      <span
+                        key={pairing}
+                        className="px-3 py-1 bg-primary/15 text-primary rounded-full text-xs font-bold border border-primary/30"
+                      >
+                        {pairing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch mt-auto">
+                <button
+                  onClick={() => navigate('/menu')}
+                  className="flex-1 px-4 py-3 bg-white/5 text-white rounded-xl font-bold hover:bg-white/10 transition-colors"
+                >
+                  Continue Browsing
+                </button>
+                <button
+                  onClick={handleAddToCart}
+                  className={`flex-1 px-4 py-3 rounded-xl font-bold transition-colors ${
+                    showAddedFeedback
+                      ? 'bg-green-500 text-white'
+                      : 'bg-primary text-dark hover:bg-accent hover:text-white'
+                  }`}
+                >
+                  {showAddedFeedback
+                    ? '✓ Added!'
+                    : qtyInCart > 0
+                    ? `Add More (${qtyInCart})`
+                    : 'Add to Cart'}
+                </button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* 4. Live Feedback & Instant Ratings */}
-        <FeedbackSection foodId={food.id} />
-      </div>
-      <div className="p-4 flex flex-col gap-2">
-        <button
-          className="w-full bg-primary text-dark font-bold rounded-xl py-3 shadow-soft hover:bg-accent transition-colors"
-          onClick={() => { addToCart(food); navigate('/cart'); }}
-        >
-          Add to Cart • ₾{food.price.toFixed(2)}
-        </button>
+        <GroupOrderSection food={food} />
       </div>
     </div>
   );
