@@ -11,6 +11,17 @@ const orderRoutes = require('./routes/orders');
 const { router: authRoutes } = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 
+// Fail fast if critical env variables are missing
+const requiredEnv = ['JWT_SECRET'];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length) {
+  console.warn(
+    `⚠️ Missing env vars: ${missingEnv.join(
+      ', '
+    )}. Please set them in backend/.env (see .env.example).`
+  );
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {

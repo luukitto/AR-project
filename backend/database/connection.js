@@ -1,7 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const dbPath = path.join(__dirname, '../../database/georgian_menu.db');
+// Allow DB path to be configured via environment (fallback keeps current default)
+const dbPath =
+  process.env.DB_PATH ||
+  path.join(__dirname, '../../database/georgian_menu.db');
 
 class Database {
   constructor() {

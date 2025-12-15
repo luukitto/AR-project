@@ -8,7 +8,8 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const dbPath = path.join(dbDir, 'georgian_menu.db');
+const dbPath =
+  process.env.DB_PATH || path.join(dbDir, 'georgian_menu.db');
 
 // Read the schema file
 const schemaPath = path.join(dbDir, 'schema.sql');

@@ -88,8 +88,15 @@ cd backend  # or stay in root if backend is in root
 # Install backend dependencies
 npm install
 
+# Copy env template and set your secrets
+cp .env.example .env
+# then edit .env (PORT, DB_PATH, JWT_SECRET, etc.)
+
 # Initialize database
 node database/init.js
+
+# Seed demo data (restaurant, admin user, tables, menu)
+npm run seed-demo
 
 # Start backend server
 npm run server
