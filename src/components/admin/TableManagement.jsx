@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAdminStore } from '../../store/adminStore';
-import { Download } from '../MaterialIcons';
 
 export default function TableManagement() {
   const [showModal, setShowModal] = useState(false);
@@ -436,9 +435,9 @@ export default function TableManagement() {
               </button>
               <button
                 onClick={downloadQr}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
               >
-                <Download className="w-4 h-4" /> Download
+                Download
               </button>
               <button
                 onClick={() => printQRCode(qrPreview.table)}
