@@ -8,6 +8,7 @@
     "server": "node server.js",
     "dev": "nodemon server.js",
     "init-db": "node scripts/initDatabase.js",
+    "migrate-menu": "node scripts/migrateMenuMeta.js",
     "seed-demo": "node scripts/seedDemoData.js",
     "clear-orders": "node scripts/clearOrders.js"
   },

@@ -50,6 +50,10 @@ CREATE TABLE menu_items (
     image_url VARCHAR(500),
     category_id INTEGER NOT NULL,
     is_available BOOLEAN DEFAULT 1,
+    is_spicy BOOLEAN DEFAULT 0,
+    is_vegan BOOLEAN DEFAULT 0,
+    allergens TEXT, -- comma separated
+    modifiers TEXT, -- JSON array of modifiers {name, price}
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (restaurant_id) REFERENCES restaurants(id),
@@ -143,14 +147,14 @@ INSERT INTO admin_users (restaurant_id, username, email, password_hash, full_nam
 (1, 'admin', 'admin@georgiandelights.com', '$2b$10$rQZ8kqVZ8kqVZ8kqVZ8kqO', 'Restaurant Admin', 'admin');
 
 -- Insert sample menu items (migrating from your existing foods.js)
-INSERT INTO menu_items (id, restaurant_id, name, description, price, image_url, category_id) VALUES 
-('khinkali', 1, 'Khinkali', 'Traditional Georgian dumplings filled with spiced meat.', 12.50, 'khinkali_rc.jpg', 1),
-('khachapuri', 1, 'Khachapuri', 'Cheese-filled bread, a Georgian classic.', 10.00, 'khachapuri.webp', 1),
-('lobio', 1, 'Lobio', 'Bean stew with herbs and spices.', 6.00, 'lobio.webp', 1),
-('chakhokhbili', 1, 'Chakhokhbili', 'Chicken stew with tomatoes and herbs.', 10.00, 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Chakhokhbili.jpg', 1),
-('wine', 1, 'Saperavi Wine', 'Famous dry red wine from Georgia.', 18.00, 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Saperavi_wine.jpg', 2),
-('lemonade', 1, 'Tarkhuna Lemonade', 'Traditional tarragon-flavored Georgian lemonade.', 5.00, 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tarkhuna.jpg', 2),
-('borjomi', 1, 'Borjomi Mineral Water', 'Legendary Georgian mineral water from Borjomi valley.', 4.00, 'https://upload.wikimedia.org/wikipedia/commons/2/2e/Borjomi_mineral_water.jpg', 2);
+INSERT INTO menu_items (id, restaurant_id, name, description, price, image_url, category_id, is_available, is_spicy, is_vegan, allergens, modifiers) VALUES 
+('khinkali', 1, 'Khinkali', 'Traditional Georgian dumplings filled with spiced meat.', 12.50, 'khinkali_rc.jpg', 1, 1, 1, 0, 'gluten', '[{"name":"Extra sour cream","price":1.50},{"name":"Extra spice","price":0.50}]'),
+('khachapuri', 1, 'Khachapuri', 'Cheese-filled bread, a Georgian classic.', 10.00, 'khachapuri.webp', 1, 1, 0, 0, 'gluten,dairy', '[{"name":"Add egg","price":1.00}]'),
+('lobio', 1, 'Lobio', 'Bean stew with herbs and spices.', 6.00, 'lobio.webp', 1, 1, 0, 1, 'none', '[{"name":"Add cornbread","price":1.50}]'),
+('chakhokhbili', 1, 'Chakhokhbili', 'Chicken stew with tomatoes and herbs.', 10.00, 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Chakhokhbili.jpg', 1, 1, 1, 0, 'none', '[]'),
+('wine', 1, 'Saperavi Wine', 'Famous dry red wine from Georgia.', 18.00, 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Saperavi_wine.jpg', 2, 1, 0, 0, 'sulfites', '[]'),
+('lemonade', 1, 'Tarkhuna Lemonade', 'Traditional tarragon-flavored Georgian lemonade.', 5.00, 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tarkhuna.jpg', 2, 1, 0, 0, 'none', '[]'),
+('borjomi', 1, 'Borjomi Mineral Water', 'Legendary Georgian mineral water from Borjomi valley.', 4.00, 'https://upload.wikimedia.org/wikipedia/commons/2/2e/Borjomi_mineral_water.jpg', 2, 1, 0, 0, 'none', '[]');
 
 -- Insert food pairings
 INSERT INTO food_pairings (item_id, paired_item_id) VALUES 

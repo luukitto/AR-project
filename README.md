@@ -95,6 +95,9 @@ cp .env.example .env
 # Initialize database
 node database/init.js
 
+# (Optional) migrate existing DB to add menu metadata columns
+npm run migrate-menu
+
 # Seed demo data (restaurant, admin user, tables, menu)
 npm run seed-demo
 

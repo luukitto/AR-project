@@ -1,25 +1,54 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import foods from '../store/foods';
 import useCart from '../store/useCart';
 import useTableSharing from '../store/useTableSharing';
 import MobileUtils from '../utils/mobileUtils';
+import Api from '../services/api';
 
 export default function Menu() {
   const navigate = useNavigate();
   const [category, setCategory] = useState('food');
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { addToCart, cart } = useCart();
   const { currentSession, sessionOrders } = useTableSharing();
   const [showAddedFeedback, setShowAddedFeedback] = useState(null);
   const categoryContainerRef = useRef(null);
 
-  const categories = [
-    { key: 'food', label: 'Foods' },
-    { key: 'drink', label: 'Drinks' },
-    { key: 'dessert', label: 'Desserts' }
-  ];
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const cats = await Api.getCategories();
+        setCategories(cats.map((c) => ({ key: c.name, label: c.display_name })));
+      } catch (err) {
+        console.error(err);
+        setCategories([
+          { key: 'food', label: 'Foods' },
+          { key: 'drink', label: 'Drinks' },
+          { key: 'dessert', label: 'Desserts' },
+        ]);
+      }
+    };
+    loadCategories();
+  }, []);
 
-  const filtered = foods.filter(f => f.category === category);
+  useEffect(() => {
+    const loadItems = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await Api.getMenuItems(category);
+        setItems(data);
+      } catch (err) {
+        setError(err.message || 'Failed to load menu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadItems();
+  }, [category]);
 
   // Add mobile features on component mount
   useEffect(() => {
@@ -79,17 +108,34 @@ export default function Menu() {
         ))}
       </div>
       <div className="flex flex-col gap-6">
-        {filtered.length === 0 ? (
+        {loading && <div className="text-center opacity-60 py-8">Loading menu...</div>}
+        {error && <div className="text-center text-red-500 py-4">{error}</div>}
+        {!loading && !error && items.length === 0 && (
           <div className="text-center opacity-60 py-8">No items in this category yet.</div>
-        ) : filtered.map(food => (
+        )}
+        {!loading && !error && items.map(food => (
           <div key={food.id} className="bg-card rounded-2xl shadow-soft p-5 flex flex-col gap-3">
-            <img src={food.image} alt={food.name} className="rounded-xl w-full h-48 object-cover mb-2" loading="lazy" />
+            <img src={food.image_url || food.image} alt={food.name} className="rounded-xl w-full h-48 object-cover mb-2" loading="lazy" />
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-bold text-lg font-georgian">{food.name}</div>
-                <div className="text-sm opacity-80 font-georgian">{food.desc}</div>
+                <div className="text-sm opacity-80 font-georgian">{food.description || food.desc}</div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {food.is_spicy ? <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">Spicy</span> : null}
+                  {food.is_vegan ? <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Vegan</span> : null}
+                  {food.allergens && food.allergens.length > 0 && !food.allergens.includes('none') ? (
+                    <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                      Allergens: {food.allergens.join(', ')}
+                    </span>
+                  ) : null}
+                </div>
+                {food.modifiers && food.modifiers.length > 0 && (
+                  <div className="mt-2 text-xs opacity-80">
+                    Extras: {food.modifiers.map((m) => `${m.name} (+₾${m.price.toFixed(2)})`).join(' • ')}
+                  </div>
+                )}
               </div>
-              <div className="font-bold text-primary text-lg">₾{food.price.toFixed(2)}</div>
+              <div className="font-bold text-primary text-lg">₾{Number(food.price).toFixed(2)}</div>
             </div>
             <div className="flex gap-3 mt-4">
               <button
@@ -104,7 +150,17 @@ export default function Menu() {
                     ? 'bg-green-500 text-white' 
                     : 'bg-primary text-dark hover:bg-accent hover:text-white'
                 }`}
-                onClick={() => handleAddToCart(food)}
+                onClick={() => handleAddToCart({
+                  id: food.id,
+                  name: food.name,
+                  desc: food.description || food.desc,
+                  price: food.price,
+                  image: food.image_url || food.image,
+                  modifiers: food.modifiers || [],
+                  is_spicy: food.is_spicy,
+                  is_vegan: food.is_vegan,
+                  allergens: food.allergens || [],
+                })}
               >
                 {showAddedFeedback === food.id ? '✓ Added!' : 
                  getItemQuantityInCart(food.id) > 0 ? `Add More (${getItemQuantityInCart(food.id)})` : 'Add to Cart'}

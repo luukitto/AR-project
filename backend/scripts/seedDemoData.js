@@ -150,6 +150,13 @@ async function seed() {
       price: 12.5,
       image: 'khinkali_rc.jpg',
       category: 'food',
+      isSpicy: true,
+      isVegan: false,
+      allergens: 'gluten',
+      modifiers: [
+        { name: 'Extra sour cream', price: 1.5 },
+        { name: 'Extra spice', price: 0.5 },
+      ],
     },
     {
       id: 'khachapuri',
@@ -158,6 +165,10 @@ async function seed() {
       price: 10,
       image: 'khachapuri.webp',
       category: 'food',
+      isSpicy: false,
+      isVegan: false,
+      allergens: 'gluten,dairy',
+      modifiers: [{ name: 'Add egg', price: 1.0 }],
     },
     {
       id: 'lobio',
@@ -166,6 +177,10 @@ async function seed() {
       price: 6,
       image: 'lobio.webp',
       category: 'food',
+      isSpicy: false,
+      isVegan: true,
+      allergens: 'none',
+      modifiers: [{ name: 'Add cornbread', price: 1.5 }],
     },
     {
       id: 'chakhokhbili',
@@ -175,6 +190,10 @@ async function seed() {
       image:
         'https://upload.wikimedia.org/wikipedia/commons/0/0e/Chakhokhbili.jpg',
       category: 'food',
+      isSpicy: true,
+      isVegan: false,
+      allergens: 'none',
+      modifiers: [],
     },
     {
       id: 'wine',
@@ -184,6 +203,10 @@ async function seed() {
       image:
         'https://upload.wikimedia.org/wikipedia/commons/7/7b/Saperavi_wine.jpg',
       category: 'drink',
+      isSpicy: false,
+      isVegan: true,
+      allergens: 'sulfites',
+      modifiers: [],
     },
     {
       id: 'lemonade',
@@ -192,6 +215,10 @@ async function seed() {
       price: 5,
       image: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tarkhuna.jpg',
       category: 'drink',
+      isSpicy: false,
+      isVegan: true,
+      allergens: 'none',
+      modifiers: [],
     },
     {
       id: 'borjomi',
@@ -201,6 +228,10 @@ async function seed() {
       image:
         'https://upload.wikimedia.org/wikipedia/commons/2/2e/Borjomi_mineral_water.jpg',
       category: 'drink',
+      isSpicy: false,
+      isVegan: true,
+      allergens: 'none',
+      modifiers: [],
     },
   ];
 
@@ -209,8 +240,8 @@ async function seed() {
     if (!categoryId) continue;
 
     await run(
-      `INSERT INTO menu_items (id, restaurant_id, name, description, price, image_url, category_id, is_available)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+      `INSERT INTO menu_items (id, restaurant_id, name, description, price, image_url, category_id, is_available, is_spicy, is_vegan, allergens, modifiers)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          name=excluded.name,
          description=excluded.description,
@@ -218,6 +249,10 @@ async function seed() {
          image_url=excluded.image_url,
          category_id=excluded.category_id,
          is_available=1,
+         is_spicy=excluded.is_spicy,
+         is_vegan=excluded.is_vegan,
+         allergens=excluded.allergens,
+         modifiers=excluded.modifiers,
          updated_at=CURRENT_TIMESTAMP`,
       [
         item.id,
@@ -227,6 +262,10 @@ async function seed() {
         item.price,
         item.image,
         categoryId,
+        item.isSpicy ? 1 : 0,
+        item.isVegan ? 1 : 0,
+        item.allergens || 'none',
+        JSON.stringify(item.modifiers || []),
       ]
     );
   }

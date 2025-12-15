@@ -15,6 +15,10 @@ router.get('/items', async (req, res) => {
         mi.price,
         mi.image_url,
         mi.is_available,
+        mi.is_spicy,
+        mi.is_vegan,
+        mi.allergens,
+        mi.modifiers,
         c.name as category,
         c.display_name as category_display
       FROM menu_items mi
@@ -39,8 +43,15 @@ router.get('/items', async (req, res) => {
         FROM food_pairings 
         WHERE item_id = ?
       `, [item.id]);
-      
       item.pairings = pairings.map(p => p.id);
+      item.allergens = item.allergens
+        ? item.allergens.split(',').map(a => a.trim()).filter(Boolean)
+        : [];
+      try {
+        item.modifiers = item.modifiers ? JSON.parse(item.modifiers) : [];
+      } catch (e) {
+        item.modifiers = [];
+      }
     }
     
     res.json(items);
@@ -63,6 +74,10 @@ router.get('/items/:id', async (req, res) => {
         mi.price,
         mi.image_url,
         mi.is_available,
+        mi.is_spicy,
+        mi.is_vegan,
+        mi.allergens,
+        mi.modifiers,
         c.name as category,
         c.display_name as category_display
       FROM menu_items mi
@@ -82,6 +97,14 @@ router.get('/items/:id', async (req, res) => {
     `, [id]);
     
     item.pairings = pairings.map(p => p.id);
+    item.allergens = item.allergens
+      ? item.allergens.split(',').map(a => a.trim()).filter(Boolean)
+      : [];
+    try {
+      item.modifiers = item.modifiers ? JSON.parse(item.modifiers) : [];
+    } catch (e) {
+      item.modifiers = [];
+    }
     
     res.json(item);
   } catch (error) {
