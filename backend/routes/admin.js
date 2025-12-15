@@ -1,8 +1,10 @@
 const express = require('express');
+const QRCode = require('qrcode');
 const db = require('../database/connection');
 const { authenticateToken } = require('./auth');
 
 const router = express.Router();
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 
 // Apply authentication middleware to all admin routes
 router.use(authenticateToken);
@@ -218,6 +220,31 @@ router.post('/tables', async (req, res) => {
   }
 });
 
+// Generate QR code PNG (data URL) for a table
+router.get('/tables/:id/qr', async (req, res) => {
+  try {
+    const restaurantId = req.user.restaurantId;
+    const { id } = req.params;
+
+    const table = await db.get(
+      `SELECT * FROM restaurant_tables WHERE id = ? AND restaurant_id = ?`,
+      [id, restaurantId]
+    );
+
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    const qrUrl = `${FRONTEND_BASE_URL}/table/${table.qr_code}`;
+    const dataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, scale: 6 });
+
+    res.json({ qrUrl, dataUrl });
+  } catch (error) {
+    console.error('Generate table QR error:', error);
+    res.status(500).json({ error: 'Failed to generate QR' });
+  }
+});
+
 // Update table
 router.put('/tables/:id', async (req, res) => {
   try {
@@ -262,6 +289,66 @@ router.delete('/tables/:id', async (req, res) => {
   } catch (error) {
     console.error('Delete table error:', error);
     res.status(500).json({ error: 'Failed to delete table' });
+  }
+});
+
+// Demo reset: clear orders and sessions for the restaurant (keeps tables/menu)
+router.post('/demo/reset', async (req, res) => {
+  try {
+    const restaurantId = req.user.restaurantId;
+
+    // Get session ids for this restaurant
+    const sessionIds = await db.all(
+      `SELECT ts.id 
+       FROM table_sessions ts
+       JOIN restaurant_tables rt ON ts.table_id = rt.id
+       WHERE rt.restaurant_id = ?`,
+      [restaurantId]
+    );
+    const sessionIdList = sessionIds.map((s) => s.id);
+
+    // Delete order_items and orders tied to those sessions
+    await db.run(
+      `DELETE FROM order_items WHERE order_id IN (
+        SELECT o.id FROM orders o 
+        JOIN table_sessions ts ON o.session_id = ts.id
+        JOIN restaurant_tables rt ON ts.table_id = rt.id
+        WHERE rt.restaurant_id = ?
+      )`,
+      [restaurantId]
+    );
+    await db.run(
+      `DELETE FROM orders WHERE id IN (
+        SELECT o.id FROM orders o 
+        JOIN table_sessions ts ON o.session_id = ts.id
+        JOIN restaurant_tables rt ON ts.table_id = rt.id
+        WHERE rt.restaurant_id = ?
+      )`,
+      [restaurantId]
+    );
+
+    // Delete session customers and sessions
+    if (sessionIdList.length > 0) {
+      const placeholders = sessionIdList.map(() => '?').join(',');
+      await db.run(
+        `DELETE FROM session_customers WHERE session_id IN (${placeholders})`,
+        sessionIdList
+      );
+      await db.run(
+        `DELETE FROM table_sessions WHERE id IN (${placeholders})`,
+        sessionIdList
+      );
+    }
+
+    // Reset sequences
+    await db.run(
+      `DELETE FROM sqlite_sequence WHERE name IN ('orders','order_items','session_customers')`
+    );
+
+    res.json({ message: 'Demo data reset: orders and sessions cleared.' });
+  } catch (error) {
+    console.error('Demo reset error:', error);
+    res.status(500).json({ error: 'Failed to reset demo data' });
   }
 });
 

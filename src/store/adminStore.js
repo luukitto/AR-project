@@ -17,6 +17,7 @@ export const useAdminStore = create(
       menuItems: [],
       tables: [],
       orders: [],
+      lastTableQr: {},
       
       // Loading states
       loading: {
@@ -98,6 +99,11 @@ export const useAdminStore = create(
         }
 
         return response.json();
+      },
+
+      // Demo reset
+      resetDemoData: async () => {
+        return get().apiCall('/admin/demo/reset', { method: 'POST' });
       },
 
       // Dashboard actions
@@ -211,6 +217,14 @@ export const useAdminStore = create(
         
         // Refresh tables
         await get().fetchTables();
+      },
+
+      fetchTableQr: async (id) => {
+        const data = await get().apiCall(`/admin/tables/${id}/qr`);
+        set((state) => ({
+          lastTableQr: { ...state.lastTableQr, [id]: data },
+        }));
+        return data;
       },
 
       // Order management actions

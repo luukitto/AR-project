@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAdminStore } from '../../store/adminStore';
+import { Download } from '../MaterialIcons';
 
 export default function TableManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
+  const [qrPreview, setQrPreview] = useState(null); // {table, dataUrl, qrUrl}
+  const [qrLoading, setQrLoading] = useState(false);
   const [formData, setFormData] = useState({
     tableNumber: '',
     capacity: 4,
@@ -11,13 +14,15 @@ export default function TableManagement() {
   });
 
   const { 
-    tables, 
-    loading, 
-    fetchTables, 
-    createTable, 
-    updateTable, 
+    tables,
+    loading,
+    fetchTables,
+    createTable,
+    updateTable,
     deleteTable,
-    apiCall 
+    apiCall,
+    fetchTableQr,
+    resetDemoData,
   } = useAdminStore();
 
   useEffect(() => {
@@ -141,6 +146,37 @@ export default function TableManagement() {
     printWindow.print();
   };
 
+  const showQr = async (table) => {
+    try {
+      setQrLoading(true);
+      const data = await fetchTableQr(table.id);
+      setQrPreview({ table, dataUrl: data.dataUrl, qrUrl: data.qrUrl });
+    } catch (err) {
+      alert('Failed to load QR code: ' + err.message);
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const downloadQr = () => {
+    if (!qrPreview?.dataUrl) return;
+    const link = document.createElement('a');
+    link.href = qrPreview.dataUrl;
+    link.download = `table-${qrPreview.table.table_number}-qr.png`;
+    link.click();
+  };
+
+  const handleResetDemo = async () => {
+    if (!confirm('Reset demo data? This clears orders and sessions.')) return;
+    try {
+      await resetDemoData();
+      await fetchTables();
+      alert('Demo data reset: orders and sessions cleared.');
+    } catch (err) {
+      alert('Failed to reset demo data: ' + err.message);
+    }
+  };
+
   if (loading.tables) {
     return (
       <div className="p-6">
@@ -157,12 +193,20 @@ export default function TableManagement() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Table Management</h2>
-        <button
-          onClick={handleNewTable}
-          className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          Add Table
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleResetDemo}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            Reset Demo
+          </button>
+          <button
+            onClick={handleNewTable}
+            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            Add Table
+          </button>
+        </div>
       </div>
 
       {/* Tables Grid */}
@@ -244,10 +288,10 @@ export default function TableManagement() {
                   Copy URL
                 </button>
                 <button
-                  onClick={() => printQRCode(table)}
+                  onClick={() => showQr(table)}
                   className="flex-1 text-green-600 hover:text-green-800 text-xs font-medium py-1 px-2 bg-green-50 rounded"
                 >
-                  Print QR
+                  Show QR
                 </button>
               </div>
             </div>
@@ -261,10 +305,10 @@ export default function TableManagement() {
                 Edit
               </button>
               <button
-                onClick={() => printQRCode(table)}
+                onClick={() => showQr(table)}
                 className="flex-1 bg-green-50 text-green-600 hover:bg-green-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
               >
-                Print QR
+                Show QR
               </button>
               <button
                 onClick={() => handleDelete(table.id)}
@@ -360,6 +404,49 @@ export default function TableManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* QR Preview Modal */}
+      {qrPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Table {qrPreview.table.table_number} QR
+            </h3>
+            <p className="text-sm text-gray-600 mb-4 break-all">{qrPreview.qrUrl}</p>
+            <div className="flex justify-center mb-4">
+              {qrLoading ? (
+                <div className="text-gray-500">Loading...</div>
+              ) : (
+                <img
+                  src={qrPreview.dataUrl}
+                  alt={`QR for table ${qrPreview.table.table_number}`}
+                  className="w-56 h-56 object-contain"
+                />
+              )}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setQrPreview(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={downloadQr}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Download
+              </button>
+              <button
+                onClick={() => printQRCode(qrPreview.table)}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                Print
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -96,10 +96,14 @@ cp .env.example .env
 node database/init.js
 
 # (Optional) migrate existing DB to add menu metadata columns
+# (Optional) migrate existing DB to add menu metadata columns
 npm run migrate-menu
 
 # Seed demo data (restaurant, admin user, tables, menu)
 npm run seed-demo
+
+# Reset demo data (clears orders/sessions only)
+npm run clear-orders  # or use admin demo reset button
 
 # Start backend server
 npm run server
